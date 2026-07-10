@@ -6,6 +6,8 @@
 
 <img src="https://github.com/Br1an6/BoreSight/blob/main/img/main.png" alt="Boresight image" width="600">
 
+BoreSight helps you figure out if two (or more) seemingly unrelated anonymous accounts are actually being run by the exact same person behind the keyboard.
+
 **Sample output:**
 
 <img src="https://github.com/Br1an6/BoreSight/blob/main/img/result-sample.png" alt="BoresighResult image" width="600">
