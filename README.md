@@ -4,15 +4,17 @@
 [![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/platform-macos%20%7C%20linux%20%7C%20windows-lightgrey.svg)](#platform-support)
 
-<p align="center">
-  <img src="img/main.gif" alt="Boresight image" width="600">
+<p align="left">
+  <img src="img/boresight.png" alt="BoresighResult image" width="48%">
+  <br>
+  <img src="img/main.gif" alt="Boresight image" width="48%">
 </p>
 
 BoreSight helps you figure out if two (or more) seemingly unrelated anonymous accounts are actually being run by the exact same person behind the keyboard.
 
 **Sample output:**
 
-<img src="https://github.com/Br1an6/BoreSight/blob/main/img/result-sample.png" alt="BoresighResult image" width="600">
+<img src="img/result-sample.png" alt="BoresighResult image" width="600">
 
 BoreSight is a forensic CLI tool designed to perform passive time-series correlation and behavioral alignment across distinct public timestamp datasets. It identifies overlapping patterns such as active/inactive cycles to aid in forensic intelligence gathering and analysis.
 
