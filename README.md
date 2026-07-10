@@ -80,6 +80,7 @@ pip install -e .
 BoreSight provides a straightforward CLI. Because we installed it as a package, you can run it directly from anywhere using the `boresight` command (instead of `python main.py`):
 
 ```bash
+# cp .env.example .env # Make a copy of the .env.example to .env and update the API keys.
 boresight --dataset-a "sample_data/mock_a.json" --dataset-b "sample_data/mock_b.json" --proxies "proxies.txt"
 ```
 
