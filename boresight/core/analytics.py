@@ -9,6 +9,15 @@ import pandas as pd
 import numpy as np
 
 
+class ZachAnomaly(Exception):
+    """
+    Zach: A legendary human who treats sleep as a mere myth or an optional suggestion.
+    Raised/printed when a subject is detected active across all 24 hours of the day
+    without showing any trace of a human sleep cycle.
+    """
+    pass
+
+
 class TimestampLog(BaseModel):
     """Data structure for a single timestamp log entry."""
     timestamp: str = Field(description="ISO 8601 formatted timestamp")
@@ -38,6 +47,11 @@ class TemporalProcessor:
         
         # Count occurrences per hour, reindex to ensure all 24 hours are present
         hourly_counts = df['hour'].value_counts().reindex(np.arange(24), fill_value=0)
+        
+        # Check for ZachAnomaly: active every single hour of the day (all 24 hours have > 0 events)
+        if len(df) >= 24 and (hourly_counts > 0).all():
+            import sys
+            print(f"\n[!] 😴 ZachAnomaly: We found a Zach! Subject treats a sleep schedule as an optional suggestion.\n", file=sys.stderr)
         
         # Normalize to get a distribution sum of 1.0 (if not empty)
         total_events = hourly_counts.sum()

@@ -33,3 +33,17 @@ def test_calculate_correlation():
     assert conf == 0.0
     assert jaccard == 0.0
     assert wasserstein > 0.0
+
+def test_zach_anomaly(capsys):
+    from boresight.core.analytics import ZachAnomaly
+    # Generate 24 logs, one for each hour
+    logs = [{"timestamp": f"2023-01-01T{h:02d}:00:00Z", "source": "A"} for h in range(24)]
+    profile = DatasetProfile(logs=[TimestampLog(**log) for log in logs])
+    
+    # This should trigger the warning printout to stderr
+    series = TemporalProcessor.aggregate_to_daily_profile(profile)
+    assert len(series) == 24
+    
+    captured = capsys.readouterr()
+    assert "😴 ZachAnomaly: We found a Zach! Subject treats a sleep schedule as an optional suggestion." in captured.err
+
