@@ -4,7 +4,7 @@ Handles proxy rotation, user-agent injection, and resilient HTTP fetching.
 """
 
 import random
-import threading
+import multiprocessing
 from typing import List, Optional
 import httpx
 
@@ -23,7 +23,7 @@ class ProxyRotator:
     def __init__(self, proxies: List[str]):
         self._proxies = proxies
         self._index = 0
-        self._lock = threading.Lock()
+        self._lock = multiprocessing.Lock()
 
     def get_proxy(self) -> Optional[str]:
         """Returns the next proxy in a round-robin fashion."""
