@@ -5,9 +5,9 @@
 [![Platform](https://img.shields.io/badge/platform-macos%20%7C%20linux%20%7C%20windows-lightgrey.svg)](#platform-support)
 
 <p align="left">
-  <img src="img/boresight.png" alt="BoresighResult image" width="48%">
+  <img src="img/boresight.png" alt="BoresighResult image" width="600">
   <br>
-  <img src="img/main.gif" alt="Boresight image" width="48%">
+  <img src="img/main.gif" alt="Boresight image" width="600">
 </p>
 
 BoreSight helps you figure out if two (or more) seemingly unrelated anonymous accounts are actually being run by the exact same person behind the keyboard.
