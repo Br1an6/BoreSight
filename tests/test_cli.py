@@ -28,7 +28,8 @@ def test_cli_validation_flags():
                 "sample_data/mock_b.json",
                 None,
                 None,
-                "report.txt"
+                "report.txt",
+                False
             )
 
 def test_cli_no_validation_flag():
@@ -48,7 +49,7 @@ def test_cli_version():
     runner = CliRunner()
     result = runner.invoke(cli, ["-v"])
     assert result.exit_code == 0
-    assert "BoreSight v0.0.1" in result.output
+    assert "BoreSight v0.0.2" in result.output
 
 def test_cli_help():
     runner = CliRunner()

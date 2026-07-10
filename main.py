@@ -138,9 +138,51 @@ def extract_timezone(report: str) -> Optional[str]:
         offset = max(-11, min(12, val))
         return f"UTC{offset:+d}"
         
+        
     return None
 
 
+def draw_heatmap(logs: List[Dict]):
+    import datetime
+    
+    # 7 days, 24 hours
+    grid = [[0 for _ in range(24)] for _ in range(7)]
+    max_count = 0
+    for log in logs:
+        ts = log.get("timestamp")
+        if not ts: continue
+        try:
+            # Parse ISO string
+            dt = datetime.datetime.fromisoformat(ts.replace('Z', '+00:00'))
+            day = dt.weekday()
+            hour = dt.hour
+            grid[day][hour] += 1
+            if grid[day][hour] > max_count:
+                max_count = grid[day][hour]
+        except Exception:
+            pass
+            
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    
+    click.secho("\n--- Target Activity Heatmap (UTC) ---", fg="cyan", bold=True)
+    click.echo("     " + "".join([f" {h:02d} " for h in range(24)]))
+    for d, row in enumerate(grid):
+        line = f"{days[d]}  "
+        for val in row:
+            if val == 0:
+                line += "\033[48;5;236m    \033[0m" # Dark grey block
+            else:
+                intensity = val / max_count
+                if intensity < 0.25:
+                    line += f"\033[48;5;17m\033[38;5;15m {val:02d} \033[0m" # Dark Blue
+                elif intensity < 0.50:
+                    line += f"\033[48;5;27m\033[38;5;15m {val:02d} \033[0m" # Light Blue
+                elif intensity < 0.75:
+                    line += f"\033[48;5;214m\033[38;5;16m {val:02d} \033[0m" # Orange
+                else:
+                    line += f"\033[48;5;196m\033[38;5;15m {val:02d} \033[0m" # Red
+        click.echo(line)
+    click.echo("")
 def get_world_map_lines(timezone_str: str) -> List[str]:
     """Generates colored ASCII world map lines with a pinpoint at the given timezone."""
     tz_coords = {
@@ -205,7 +247,14 @@ __,-----"-..?----_/ )\    . ,-'"             "                  (__--/
     return output_lines
 
 
-async def async_main(dataset_a: str, dataset_b: Optional[str], dataset_dir: Optional[str], proxies_file: Optional[str], output_file: Optional[str] = None) -> None:
+def run_graph_process(initial_state: dict) -> dict:
+    """Wrapper function to allow multiprocessing Pickling of the graph execution."""
+    from boresight.agents.graph import build_forensic_graph
+    graph = build_forensic_graph()
+    return graph.invoke(initial_state)
+
+
+async def async_main(dataset_a: str, dataset_b: Optional[str], dataset_dir: Optional[str], proxies_file: Optional[str], output_file: Optional[str] = None, no_ai: bool = False) -> None:
     # 1. Initialize Network Engine
     rotator: Optional[ProxyRotator] = None
     if proxies_file:
@@ -283,41 +332,61 @@ async def async_main(dataset_a: str, dataset_b: Optional[str], dataset_dir: Opti
         click.secho("[!] Must provide either --dataset-b or --dataset-dir", fg="red")
         sys.exit(1)
     
-    # 3. Graph Execution
+    # 3. Graph Execution & Analysis
     click.secho("[*] Initializing temporal correlation engine...", fg="yellow")
-    graph = build_forensic_graph()
+    draw_heatmap(data_b)
     
-    initial_state: GraphState = {
-        "raw_dataset_a": data_a,
-        "raw_dataset_b": data_b,
-        "normalized_profile_a": None,
-        "normalized_profile_b": None,
-        "variance": 0.0,
-        "overlap_confidence": 0.0,
-        "jaccard_tfidf": 0.0,
-        "report": "",
-        "validation_attempts": 0,
-        "validation_feedback": None,
-        "is_valid": False
-    }
-    
-    # Start matrix animation
-    stop_event = asyncio.Event()
-    animation_task = asyncio.create_task(matrix_animation(stop_event))
-    
-    # Ensure animation starts drawing before we lock the thread
-    await asyncio.sleep(0.1)
-    
-    try:
-        final_state = await asyncio.to_thread(graph.invoke, initial_state)
-    except Exception as e:
-        stop_event.set()
-        await animation_task
-        click.secho(f"[!] Error during correlation analysis: {e}", fg="red")
-        sys.exit(1)
-    finally:
-        stop_event.set()
-        await animation_task
+    if no_ai:
+        click.secho("[*] AI Analysis Disabled. Performing ML statistical correlation only.", fg="yellow")
+        from boresight.core.analytics import DatasetProfile, TemporalProcessor, calculate_correlation
+        profile_a = DatasetProfile(logs=data_a)
+        profile_b = DatasetProfile(logs=data_b)
+        series_a = TemporalProcessor.aggregate_to_daily_profile(profile_a)
+        series_b = TemporalProcessor.aggregate_to_daily_profile(profile_b)
+        var, conf, jaccard, wasserstein = calculate_correlation(series_a, series_b)
+        
+        final_state = {
+            "overlap_confidence": conf,
+            "variance": var,
+            "jaccard_tfidf": jaccard,
+            "wasserstein": wasserstein,
+            "report": "AI Brief Generation was disabled via --no-ai flag. Only statistical data is available."
+        }
+    else:
+        initial_state: GraphState = {
+            "raw_dataset_a": data_a,
+            "raw_dataset_b": data_b,
+            "normalized_profile_a": None,
+            "normalized_profile_b": None,
+            "variance": 0.0,
+            "overlap_confidence": 0.0,
+            "jaccard_tfidf": 0.0,
+            "report": "",
+            "validation_attempts": 0,
+            "validation_feedback": None,
+            "is_valid": False
+        }
+        
+        # Start matrix animation
+        stop_event = asyncio.Event()
+        animation_task = asyncio.create_task(matrix_animation(stop_event))
+        
+        # Ensure animation starts drawing before we lock the thread/process
+        await asyncio.sleep(0.1)
+        
+        try:
+            from concurrent.futures import ProcessPoolExecutor
+            loop = asyncio.get_running_loop()
+            with ProcessPoolExecutor(max_workers=1) as pool:
+                final_state = await loop.run_in_executor(pool, run_graph_process, initial_state)
+        except Exception as e:
+            stop_event.set()
+            await animation_task
+            click.secho(f"[!] Error during correlation analysis: {e}", fg="red")
+            sys.exit(1)
+        finally:
+            stop_event.set()
+            await animation_task
         
     # 4. Reporting
     click.secho("\n" + "="*60, fg="green", bold=True)
@@ -423,7 +492,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.option('--validation-retries', type=int, default=None, help='Maximum number of validation retries (overrides VALIDATION_MAX_RETRIES).')
 @click.option('--validator-provider', type=str, default=None, help='LLM provider for validation (overrides VALIDATOR_PROVIDER).')
 @click.option('--validator-model', type=str, default=None, help='LLM model for validation (overrides VALIDATOR_MODEL).')
-@click.version_option('0.0.1', '-v', '--version', message='BoreSight v%(version)s')
+@click.option('--no-ai', is_flag=True, help='Disable AI LLM graph, run purely ML metrics and output heatmaps.')
+@click.version_option('0.0.2', '-v', '--version', message='BoreSight v%(version)s')
 def cli(
     dataset_a: str,
     dataset_b: Optional[str],
@@ -433,7 +503,8 @@ def cli(
     validate: Optional[bool],
     validation_retries: Optional[int],
     validator_provider: Optional[str],
-    validator_model: Optional[str]
+    validator_model: Optional[str],
+    no_ai: bool
 ) -> None:
     """
     BoreSight: Passive time-series correlation and behavioral alignment tool.
@@ -449,7 +520,7 @@ def cli(
 
     print_banner()
     click.secho("Starting BoreSight Analysis...", fg="blue", bold=True)
-    asyncio.run(async_main(dataset_a, dataset_b, dataset_dir, proxies, output))
+    asyncio.run(async_main(dataset_a, dataset_b, dataset_dir, proxies, output, no_ai))
 
 
 if __name__ == '__main__':

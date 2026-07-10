@@ -1,10 +1,12 @@
 # BoreSight
 
-![version](https://img.shields.io/badge/version-0.0.1-blue)
+![version](https://img.shields.io/badge/version-0.0.2-blue)
 [![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/platform-macos%20%7C%20linux%20%7C%20windows-lightgrey.svg)](#platform-support)
 
-<img src="https://github.com/Br1an6/BoreSight/blob/main/img/main.png" alt="Boresight image" width="600">
+<p align="center">
+  <img src="https://github.com/Br1an6/BoreSight/blob/main/img/main.gif" alt="Boresight image" width="600">
+</p>
 
 BoreSight helps you figure out if two (or more) seemingly unrelated anonymous accounts are actually being run by the exact same person behind the keyboard.
 
@@ -23,6 +25,8 @@ BoreSight is a forensic CLI tool designed to perform passive time-series correla
 - **Temporal Correlation Engine**: High-performance temporal aggregation using Pandas, reducing raw timestamps into 24-hour behavioral profiles. Uses **Machine Learning techniques** like **Kernel Density Estimation (KDE)** to smooth sparse data and **Earth Mover's (Wasserstein) Distance** to accurately align slightly shifted schedules. Also calculates statistical variance, Cosine similarity, and Continuous TF-IDF Jaccard coefficients.
 - **Bulk Persona Clustering (1-to-Many)**: Supply a target dataset and compare it against an entire directory of datasets to automatically identify the most likely aliases based on their Wasserstein distance leaderboard.
 - **Agent Orchestration**: Deterministic analysis workflows powered by LangGraph and LLMs to generate structured forensic intelligence briefs, including estimates for user timezone and geographic location.
+- **Activity Heatmaps**: Generates a colorful, intensity-mapped terminal 24x7 matrix visualizer to quickly glance at dataset rhythms.
+- **MCP Native Support**: Features a built-in FastMCP server (`boresight/mcp_server.py`) allowing AI assistants like Claude Code and other agents to run analysis natively via the Model Context Protocol.
 
 ## Agentic Workflow (LangGraph)
 BoreSight utilizes a deterministic state machine built on **LangGraph** to ingest, process, and validate forensic reports. An optional validation loop uses LLM reflection to verify statistical claims before finalizing the brief.
@@ -98,6 +102,7 @@ This will create three datasets inside the `sample_data/` directory.
 - `--dataset-b` (Optional): Path or URL to the secondary dataset for 1-to-1 correlation.
 - `--dataset-dir` (Optional): Path to a directory of dataset JSONs for 1-to-Many bulk correlation. BoreSight will score all of them and run the LLM graph on the best match.
 - `--proxies` (Optional): Path to a text file containing proxy endpoints (one per line).
+- `--no-ai` (Optional): Disable the LLM brief generation entirely. Will only output statistical ML metrics and the 24x7 Activity Heatmap.
 - `--validate / --no-validate` (Optional): Enable or disable self-validation of the generated brief (overrides `VALIDATION_ENABLED`).
 - `--validation-retries` (Optional): Maximum number of validation retries (overrides `VALIDATION_MAX_RETRIES`).
 - `--validator-provider` (Optional): LLM provider for validation (overrides `VALIDATOR_PROVIDER`).
